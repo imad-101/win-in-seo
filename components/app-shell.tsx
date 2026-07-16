@@ -7,7 +7,6 @@ import {
   BarChart3,
   Bell,
   CheckSquare2,
-  ChevronDown,
   CircleHelp,
   ExternalLink,
   LayoutDashboard,
@@ -16,6 +15,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { PropertySwitcher } from "@/components/property-switcher";
 import { mockProperty } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import type { WorkspaceProperty } from "@/lib/workspace-data";
@@ -26,7 +26,7 @@ const navigation = [
   { name: "Performance", href: "/dashboard#performance", icon: BarChart3 },
 ];
 
-export function AppShell({ children, property = mockProperty, opportunityCount = 0 }: { children: React.ReactNode; property?: WorkspaceProperty; opportunityCount?: number }) {
+export function AppShell({ children, property = mockProperty, properties = [property], opportunityCount = 0 }: { children: React.ReactNode; property?: WorkspaceProperty; properties?: WorkspaceProperty[]; opportunityCount?: number }) {
   const pathname = usePathname();
   const isOpportunityRoute = pathname.startsWith("/opportunities");
   const HeaderIcon = isOpportunityRoute ? Sparkles : LayoutDashboard;
@@ -39,16 +39,7 @@ export function AppShell({ children, property = mockProperty, opportunityCount =
           <Logo />
         </div>
 
-        <div className="mb-7 rounded-[14px] border border-[#c9edfc] bg-[#effaff] p-3.5">
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-9 items-center justify-center rounded-lg bg-[#70d6ff] text-xs font-bold text-black">R</div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-semibold text-black">{property.label}</p>
-              <p className="mt-0.5 text-[11px] text-[#727272]">{property.permission}</p>
-            </div>
-            <ChevronDown className="size-3.5 text-black" />
-          </div>
-        </div>
+        <PropertySwitcher property={property} initialProperties={properties} />
 
         <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-[#929292]">Main</p>
         <nav className="space-y-1.5" aria-label="Main navigation">
@@ -106,9 +97,10 @@ export function AppShell({ children, property = mockProperty, opportunityCount =
 
       <header className="sticky top-0 z-20 flex h-[72px] items-center border-b border-[#e4e4e0] bg-white/95 px-4 backdrop-blur lg:ml-[272px] lg:px-8">
         <Logo compact className="lg:hidden" />
+        <div className="ml-2 lg:hidden"><PropertySwitcher property={property} initialProperties={properties} compact /></div>
         <div className="hidden items-center gap-2 text-sm font-semibold text-black lg:flex"><HeaderIcon className="size-4 text-black" /> {headerLabel}</div>
         <div className="ml-auto flex items-center gap-2">
-          <a href={property.url.startsWith("http") ? property.url : `https://${property.label}`} target="_blank" rel="noreferrer" className="hidden items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-[#666666] hover:bg-[#f2f2ef] hover:text-black sm:flex">
+          <a href={property.url.startsWith("http") ? property.url : `https://${property.label}`} target="_blank" rel="noreferrer" className="hidden items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-[#666666] hover:bg-[#f2f2ef] hover:text-black lg:flex">
             {property.label}<ExternalLink className="size-3" />
           </a>
           <button className="relative flex size-9 items-center justify-center rounded-full text-black hover:bg-[#eaf8ff]" aria-label="Notifications">

@@ -5,6 +5,7 @@ import { missingGscConfiguration } from "@/lib/gsc-config";
 import { GscReconnectRequiredError, getValidGscAccessToken } from "@/lib/gsc-connection";
 import { listGscProperties } from "@/lib/gsc";
 import { mockProperty } from "@/lib/mock-data";
+import { getPrisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
@@ -26,7 +27,25 @@ export async function GET(request: NextRequest) {
     const user = await getCurrentUser();
     const { accessToken, connection } = await getValidGscAccessToken(user.id, request.nextUrl.origin);
     const properties = await listGscProperties(accessToken);
-    return Response.json({ mode: "gsc", connected: true, accountEmail: connection.email, properties });
+    const importedSites = await getPrisma().site.findMany({
+      where: { userId: user.id },
+      select: { id: true, url: true, lastSyncedAt: true },
+    });
+    const importedByUrl = new Map(importedSites.map((site) => [site.url, site]));
+    return Response.json({
+      mode: "gsc",
+      connected: true,
+      accountEmail: connection.email,
+      properties: properties.map((property) => {
+        const imported = importedByUrl.get(property.siteUrl);
+        return {
+          ...property,
+          imported: Boolean(imported),
+          siteId: imported?.id,
+          lastSyncedAt: imported?.lastSyncedAt?.toISOString(),
+        };
+      }),
+    });
   } catch (error) {
     if (error instanceof GscReconnectRequiredError) {
       return Response.json({ mode: "gsc", connected: false, properties: [], message: error.message });

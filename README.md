@@ -26,7 +26,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Database
 
-The PostgreSQL data model is in `prisma/schema.prisma` and covers users, Google accounts, one connected site, imported GSC metrics, and generated opportunities.
+The PostgreSQL data model is in `prisma/schema.prisma` and covers users, Google accounts, connected sites, imported GSC metrics, and generated opportunities.
 
 ```bash
 copy .env.example .env
@@ -86,11 +86,13 @@ Winin uses Clerk sessions to protect the dashboard, setup flow, opportunity data
    npm run dev
    ```
 
-8. Open `/connect`, authorize Google, choose one Search Console property, and import its data.
+8. Open `/connect`, authorize Google, choose a Search Console property, and import its data. Additional properties can be added later from the workspace property switcher.
 
 Winin requests `webmasters.readonly`, uses OAuth state plus PKCE, binds each Google callback to the Clerk user who started it, encrypts access and refresh tokens with AES-256-GCM, and automatically refreshes expired access tokens.
 
 The importer requests page/query rows for the latest complete 28-day period and the preceding 28 days. It retrieves up to 50,000 rows per period, persists them through Prisma, and then runs the three MVP opportunity rules.
+
+The property switcher lists every imported site for the signed-in user, including permission level, last sync, and open-opportunity count. Selecting a property updates a secure active-site cookie, refreshes the server-rendered workspace, and scopes all metrics and opportunities to that site. Its **Refresh data** action reruns the live Search Console import for the active property.
 
 ## Verification
 

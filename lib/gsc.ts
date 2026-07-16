@@ -65,6 +65,16 @@ function propertyDisplayName(siteUrl: string) {
   }
 }
 
+function permissionDisplayName(permissionLevel?: string) {
+  const labels: Record<string, string> = {
+    siteOwner: "Owner",
+    siteFullUser: "Full user",
+    siteRestrictedUser: "Restricted user",
+    siteUnverifiedUser: "Unverified",
+  };
+  return labels[permissionLevel ?? ""] ?? permissionLevel ?? "Unknown";
+}
+
 export async function listGscProperties(accessToken: string): Promise<GscProperty[]> {
   const data = await googleApiFetch<{ siteEntry?: Array<{ siteUrl?: string; permissionLevel?: string }> }>(
     `${GSC_API_BASE}/sites`,
@@ -74,7 +84,7 @@ export async function listGscProperties(accessToken: string): Promise<GscPropert
     .filter((site): site is { siteUrl: string; permissionLevel?: string } => Boolean(site.siteUrl))
     .map((site) => ({
       siteUrl: site.siteUrl,
-      permissionLevel: site.permissionLevel ?? "unknown",
+      permissionLevel: permissionDisplayName(site.permissionLevel),
       displayName: propertyDisplayName(site.siteUrl),
     }))
     .sort((a, b) => a.displayName.localeCompare(b.displayName));

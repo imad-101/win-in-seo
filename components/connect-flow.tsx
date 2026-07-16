@@ -11,6 +11,9 @@ interface GscProperty {
   siteUrl: string;
   displayName: string;
   permissionLevel: string;
+  imported?: boolean;
+  siteId?: string;
+  lastSyncedAt?: string;
 }
 
 interface PropertiesResponse {
@@ -45,7 +48,8 @@ export function ConnectFlow({ initialError }: { initialError?: string }) {
         if (!response.ok) throw new Error(payload.message ?? "Could not load Search Console properties.");
         if (!active) return;
         setData(payload);
-        setSelectedSite(payload.properties[0]?.siteUrl ?? "");
+        const preferredProperty = payload.properties.find((property) => !property.imported) ?? payload.properties[0];
+        setSelectedSite(preferredProperty?.siteUrl ?? "");
       })
       .catch((loadError: unknown) => {
         if (active) setError(loadError instanceof Error ? loadError.message : "Could not load Search Console properties.");
@@ -78,6 +82,7 @@ export function ConnectFlow({ initialError }: { initialError?: string }) {
 
   const isMock = data?.mode === "mock";
   const needsGoogleConnection = data?.mode === "gsc" && !data.connected;
+  const selectedProperty = data?.properties.find((property) => property.siteUrl === selectedSite);
 
   return (
     <Card className="w-full max-w-[640px] overflow-hidden">
@@ -138,10 +143,18 @@ export function ConnectFlow({ initialError }: { initialError?: string }) {
                 className="h-[66px] w-full appearance-none rounded-xl border border-[#ddddda] bg-white px-4 pr-11 text-sm font-semibold text-black shadow-sm outline-none focus:ring-2 focus:ring-[#70d6ff] disabled:bg-[#f5f5f2]"
               >
                 {!data?.properties.length && <option value="">No Search Console properties found</option>}
-                {data?.properties.map((property) => <option key={property.siteUrl} value={property.siteUrl}>{property.displayName} · {property.permissionLevel}</option>)}
+                {data?.properties.map((property) => <option key={property.siteUrl} value={property.siteUrl}>{property.displayName} · {property.permissionLevel}{property.imported ? " · Imported" : ""}</option>)}
               </select>
               <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-black" />
             </div>
+
+            {selectedProperty && !isMock && (
+              <div className="mt-3 grid grid-cols-2 gap-3 rounded-xl border border-[#dededb] bg-white p-4 sm:grid-cols-3">
+                <div><p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#999999]">Access</p><p className="mt-1 text-xs font-semibold text-black">{selectedProperty.permissionLevel}</p></div>
+                <div><p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#999999]">Status</p><p className="mt-1 inline-flex items-center gap-1.5 text-xs font-semibold text-black"><span className={cn("size-2 rounded-full", selectedProperty.imported ? "bg-[#80ed99]" : "bg-[#70d6ff]")} />{selectedProperty.imported ? "Imported" : "Ready to add"}</p></div>
+                <div className="col-span-2 sm:col-span-1"><p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#999999]">Last sync</p><p className="mt-1 text-xs font-semibold text-black">{selectedProperty.lastSyncedAt ? new Date(selectedProperty.lastSyncedAt).toLocaleString() : "Not imported yet"}</p></div>
+              </div>
+            )}
 
             <div className="mt-6 rounded-xl bg-[#f5f5f2] p-4">
               <p className="mb-3 text-xs font-semibold text-black">What Winin will import</p>
@@ -159,7 +172,7 @@ export function ConnectFlow({ initialError }: { initialError?: string }) {
                 </div>
               </div>
             ) : (
-              <Button size="lg" className="mt-6 w-full" onClick={importProperty} disabled={!selectedSite}>{isMock ? "Continue with demo data" : "Import Search Console data"} <Check className="size-4" /></Button>
+              <Button size="lg" className="mt-6 w-full" onClick={importProperty} disabled={!selectedSite}>{isMock ? "Continue with demo data" : selectedProperty?.imported ? "Refresh Search Console data" : "Add property and import data"} <Check className="size-4" /></Button>
             )}
           </div>
         )}

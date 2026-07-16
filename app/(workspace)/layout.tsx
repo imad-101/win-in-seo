@@ -7,5 +7,5 @@ export const dynamic = "force-dynamic";
 export default async function WorkspaceLayout({ children }: { children: React.ReactNode }) {
   await auth.protect();
   const workspace = await getWorkspaceData();
-  return <AppShell property={workspace.property} opportunityCount={workspace.metrics.opportunityCount}>{children}</AppShell>;
+  return <AppShell property={workspace.property} properties={workspace.properties} opportunityCount={workspace.metrics.opportunityCount}>{children}</AppShell>;
 }

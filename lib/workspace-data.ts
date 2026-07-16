@@ -1,24 +1,25 @@
 import "server-only";
 
+import { cookies } from "next/headers";
+import { cache } from "react";
+import { ACTIVE_SITE_COOKIE } from "@/lib/active-site";
 import { mockProperty } from "@/lib/mock-data";
 import { dashboardMetrics as mockMetrics, opportunities as mockOpportunities, opportunityTitle } from "@/lib/opportunities";
 import type { Opportunity } from "@/lib/types";
+import { listWorkspaceProperties } from "@/lib/workspace-properties";
+import type { WorkspaceProperty } from "@/lib/workspace-properties";
 
-export interface WorkspaceProperty {
-  url: string;
-  label: string;
-  permission: string;
-  lastSync: string;
-}
+export type { WorkspaceProperty } from "@/lib/workspace-properties";
 
 const mockWorkspace = {
   source: "mock" as const,
   metrics: mockMetrics,
   opportunities: mockOpportunities,
   property: mockProperty,
+  properties: [mockProperty],
 };
 
-export async function getWorkspaceData() {
+export const getWorkspaceData = cache(async () => {
   if (!process.env.DATABASE_URL) return mockWorkspace;
   try {
     const [{ getPrisma }, { getCurrentUser }] = await Promise.all([
@@ -26,12 +27,16 @@ export async function getWorkspaceData() {
       import("@/lib/current-user"),
     ]);
     const user = await getCurrentUser();
-    const site = await getPrisma().site.findFirst({
-      where: { userId: user.id, lastSyncedAt: { not: null } },
-      orderBy: { lastSyncedAt: "desc" },
+    const prisma = getPrisma();
+    const properties: WorkspaceProperty[] = await listWorkspaceProperties(user.id);
+    if (!properties.length) return mockWorkspace;
+    const requestedSiteId = (await cookies()).get(ACTIVE_SITE_COOKIE)?.value;
+    const activeProperty = properties.find((item) => item.id === requestedSiteId) ?? properties[0];
+    const site = await prisma.site.findFirst({
+      where: { id: activeProperty.id, userId: user.id },
       include: { performance: true, opportunities: true },
     });
-    if (!site || !site.performance.length) return mockWorkspace;
+    if (!site) return mockWorkspace;
 
     const clicks = site.performance.reduce((sum, row) => sum + row.clicks, 0);
     const previousClicks = site.performance.reduce((sum, row) => sum + row.previousClicks, 0);
@@ -76,14 +81,18 @@ export async function getWorkspaceData() {
       },
       opportunities,
       property: {
+        id: site.id,
         url: site.url,
         label: site.displayName,
         permission: site.gscPermission ?? "Connected",
         lastSync: site.lastSyncedAt?.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" }) ?? "Not synced",
+        opportunityCount: opportunities.filter((item) => !item.completed).length,
+        metricRows: site.performance.length,
       },
+      properties,
     };
   } catch (error) {
     console.error("Falling back to mock workspace data:", error);
     return mockWorkspace;
   }
-}
+});

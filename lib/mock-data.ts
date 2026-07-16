@@ -94,8 +94,11 @@ export const mockGscRows: GscRow[] = [
 ];
 
 export const mockProperty = {
+  id: "mock-rowlab",
   url: "https://rowlab.io/",
   label: "rowlab.io",
   permission: "Owner",
   lastSync: "Today, 9:42 AM",
+  opportunityCount: 9,
+  metricRows: mockGscRows.length,
 };
