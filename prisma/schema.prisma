@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum OpportunityType {
+  LOW_CTR
+  STRIKING_DISTANCE
+  DECLINING_PAGE
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum OpportunityStatus {
+  OPEN
+  COMPLETED
+}
+
+model User {
+  id             String          @id @default(cuid())
+  clerkUserId    String?         @unique
+  email          String          @unique
+  name           String?
+  image          String?
+  accounts       Account[]
+  gscConnections GscConnection[]
+  sites          Site[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  provider          String
+  providerAccountId String
+  accessToken       String? @db.Text
+  refreshToken      String? @db.Text
+  expiresAt         Int?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model GscConnection {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  googleAccountId String
+  email           String
+  accessToken     String   @db.Text
+  refreshToken    String?  @db.Text
+  expiresAt       DateTime
+  scopes          String   @db.Text
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sites           Site[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([googleAccountId])
+}
+
+model Site {
+  id              String         @id @default(cuid())
+  userId          String
+  gscConnectionId String?
+  url             String
+  displayName     String
+  gscPermission   String?
+  lastSyncedAt    DateTime?
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gscConnection   GscConnection? @relation(fields: [gscConnectionId], references: [id], onDelete: SetNull)
+  performance     GscMetric[]
+  opportunities   Opportunity[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([userId, url])
+  @@index([gscConnectionId])
+}
+
+model GscMetric {
+  id             String   @id @default(cuid())
+  siteId         String
+  pageUrl        String
+  query          String
+  clicks         Int
+  previousClicks Int
+  impressions    Int
+  ctr            Float
+  position       Float
+  periodStart    DateTime
+  periodEnd      DateTime
+  site           Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  importedAt     DateTime @default(now())
+
+  @@index([siteId, periodEnd])
+  @@index([siteId, pageUrl])
+}
+
+model Opportunity {
+  id             String            @id @default(cuid())
+  siteId         String
+  sourceKey      String
+  type           OpportunityType
+  priority       Priority
+  status         OpportunityStatus @default(OPEN)
+  pageUrl        String
+  targetKeyword  String
+  clicks         Int
+  previousClicks Int
+  impressions    Int
+  ctr            Float
+  position       Float
+  reason         String            @db.Text
+  actions        Json
+  completedAt    DateTime?
+  site           Site              @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([siteId, status, priority])
+  @@unique([siteId, sourceKey])
+}
