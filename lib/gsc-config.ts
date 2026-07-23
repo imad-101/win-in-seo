@@ -5,7 +5,9 @@ export function missingGscConfiguration() {
   if (!process.env.DATABASE_URL) missing.push("DATABASE_URL");
   if (!process.env.GOOGLE_CLIENT_ID) missing.push("GOOGLE_CLIENT_ID");
   if (!process.env.GOOGLE_CLIENT_SECRET) missing.push("GOOGLE_CLIENT_SECRET");
-  if (!process.env.GSC_TOKEN_ENCRYPTION_KEY) missing.push("GSC_TOKEN_ENCRYPTION_KEY");
+  if (!process.env.GSC_TOKEN_ENCRYPTION_KEY || process.env.GSC_TOKEN_ENCRYPTION_KEY.length < 32) {
+    missing.push("GSC_TOKEN_ENCRYPTION_KEY (32+ characters)");
+  }
   return missing;
 }
 

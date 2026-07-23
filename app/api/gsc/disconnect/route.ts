@@ -12,7 +12,7 @@ export async function POST() {
   if (!userId) return Response.json({ message: "Authentication required." }, { status: 401 });
 
   if (missingGscConfiguration().length) {
-    const response = NextResponse.json({ disconnected: true, mode: "mock" });
+    const response = NextResponse.json({ message: "Live Search Console is not configured." }, { status: 503 });
     response.cookies.delete(ACTIVE_SITE_COOKIE);
     return response;
   }

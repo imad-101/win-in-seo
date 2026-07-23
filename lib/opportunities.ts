@@ -1,4 +1,3 @@
-import { mockGscRows } from "@/lib/mock-data";
 import type { GscRow, Opportunity, Priority } from "@/lib/types";
 import { formatNumber } from "@/lib/utils";
 
@@ -149,22 +148,6 @@ export function detectOpportunities(rows: GscRow[]): Opportunity[] {
     return byPriority || b.impressions - a.impressions;
   });
 }
-
-export const opportunities = detectOpportunities(mockGscRows);
-
-export const dashboardMetrics = {
-  clicks: mockGscRows.reduce((sum, row) => sum + row.clicks, 0),
-  previousClicks: mockGscRows.reduce((sum, row) => sum + row.previousClicks, 0),
-  impressions: mockGscRows.reduce((sum, row) => sum + row.impressions, 0),
-  ctr:
-    (mockGscRows.reduce((sum, row) => sum + row.clicks, 0) /
-      mockGscRows.reduce((sum, row) => sum + row.impressions, 0)) *
-    100,
-  position:
-    mockGscRows.reduce((sum, row) => sum + row.position * row.impressions, 0) /
-    mockGscRows.reduce((sum, row) => sum + row.impressions, 0),
-  opportunityCount: opportunities.length,
-};
 
 export const opportunityTypeLabels = {
   LOW_CTR: "Low CTR",

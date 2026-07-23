@@ -68,22 +68,40 @@ model GscConnection {
 }
 
 model Site {
-  id              String         @id @default(cuid())
-  userId          String
-  gscConnectionId String?
-  url             String
-  displayName     String
-  gscPermission   String?
-  lastSyncedAt    DateTime?
-  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  gscConnection   GscConnection? @relation(fields: [gscConnectionId], references: [id], onDelete: SetNull)
-  performance     GscMetric[]
-  opportunities   Opportunity[]
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  id                String           @id @default(cuid())
+  userId            String
+  gscConnectionId   String?
+  url               String
+  displayName       String
+  gscPermission     String?
+  lastSyncedAt      DateTime?
+  importPeriodStart DateTime?
+  importPeriodEnd   DateTime?
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  gscConnection     GscConnection?   @relation(fields: [gscConnectionId], references: [id], onDelete: SetNull)
+  performance       GscMetric[]
+  dailyPerformance  GscDailyMetric[]
+  opportunities     Opportunity[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
   @@unique([userId, url])
   @@index([gscConnectionId])
+}
+
+model GscDailyMetric {
+  id          String   @id @default(cuid())
+  siteId      String
+  date        DateTime @db.Date
+  clicks      Int
+  impressions Int
+  ctr         Float
+  position    Float
+  site        Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  importedAt  DateTime @default(now())
+
+  @@unique([siteId, date])
+  @@index([siteId, date])
 }
 
 model GscMetric {
@@ -123,9 +141,9 @@ model Opportunity {
   actions        Json
   completedAt    DateTime?
   site           Site              @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
-  @@index([siteId, status, priority])
   @@unique([siteId, sourceKey])
+  @@index([siteId, status, priority])
 }

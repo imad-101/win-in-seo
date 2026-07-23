@@ -17,7 +17,7 @@ interface GscProperty {
 }
 
 interface PropertiesResponse {
-  mode: "mock" | "gsc";
+  mode: "setup" | "gsc";
   connected: boolean;
   accountEmail?: string;
   missing?: string[];
@@ -80,7 +80,7 @@ export function ConnectFlow({ initialError }: { initialError?: string }) {
     }
   }
 
-  const isMock = data?.mode === "mock";
+  const needsSetup = data?.mode === "setup";
   const needsGoogleConnection = data?.mode === "gsc" && !data.connected;
   const selectedProperty = data?.properties.find((property) => property.siteUrl === selectedSite);
 
@@ -109,6 +109,17 @@ export function ConnectFlow({ initialError }: { initialError?: string }) {
             <p className="mt-3 text-sm font-semibold text-black">Checking your connection</p>
             <p className="mt-1 text-xs text-[#777777]">This only takes a moment.</p>
           </div>
+        ) : needsSetup ? (
+          <div>
+            <div className="rounded-xl border border-[#ffcf70] bg-[#fff8e6] p-5">
+              <p className="text-sm font-semibold text-black">Live Search Console setup required</p>
+              <p className="mt-2 text-xs leading-5 text-[#666666]">Add the following server environment values, create the database tables, and restart the app:</p>
+              <ul className="mt-3 space-y-1.5 font-mono text-[11px] text-black">
+                {data.missing?.map((item) => <li key={item}>{item}</li>)}
+              </ul>
+            </div>
+            <p className="mt-4 text-xs leading-5 text-[#777777]">The app will not substitute demo metrics for a live import. Once setup is complete, this page will show the Google authorization button.</p>
+          </div>
         ) : needsGoogleConnection ? (
           <div>
             <div className="rounded-xl border border-[#bceaff] bg-[#effaff] p-5">
@@ -123,13 +134,6 @@ export function ConnectFlow({ initialError }: { initialError?: string }) {
               <div className="mb-5 flex items-center justify-between rounded-xl bg-[#eaffef] px-4 py-3">
                 <div className="flex items-center gap-2.5"><span className="flex size-7 items-center justify-center rounded-full bg-[#80ed99] text-black"><Check className="size-3.5" /></span><div><p className="text-xs font-semibold text-black">Google connected</p><p className="text-[11px] text-[#666666]">{data.accountEmail}</p></div></div>
                 <a href="/api/gsc/oauth/start" className="inline-flex items-center gap-1.5 text-xs font-semibold text-black"><RefreshCw className="size-3.5" /> Reconnect</a>
-              </div>
-            )}
-
-            {isMock && (
-              <div className="mb-5 rounded-xl border border-[#bceaff] bg-[#effaff] p-4">
-                <p className="text-xs font-semibold text-black">Demo mode is active</p>
-                <p className="mt-1 text-[11px] leading-5 text-[#666666]">Add {data?.missing?.join(", ")} to your environment to enable the live Google connection.</p>
               </div>
             )}
 
@@ -148,7 +152,7 @@ export function ConnectFlow({ initialError }: { initialError?: string }) {
               <ChevronDown className="pointer-events-none absolute right-4 top-1/2 size-4 -translate-y-1/2 text-black" />
             </div>
 
-            {selectedProperty && !isMock && (
+            {selectedProperty && (
               <div className="mt-3 grid grid-cols-2 gap-3 rounded-xl border border-[#dededb] bg-white p-4 sm:grid-cols-3">
                 <div><p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#999999]">Access</p><p className="mt-1 text-xs font-semibold text-black">{selectedProperty.permissionLevel}</p></div>
                 <div><p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-[#999999]">Status</p><p className="mt-1 inline-flex items-center gap-1.5 text-xs font-semibold text-black"><span className={cn("size-2 rounded-full", selectedProperty.imported ? "bg-[#80ed99]" : "bg-[#70d6ff]")} />{selectedProperty.imported ? "Imported" : "Ready to add"}</p></div>
@@ -172,7 +176,7 @@ export function ConnectFlow({ initialError }: { initialError?: string }) {
                 </div>
               </div>
             ) : (
-              <Button size="lg" className="mt-6 w-full" onClick={importProperty} disabled={!selectedSite}>{isMock ? "Continue with demo data" : selectedProperty?.imported ? "Refresh Search Console data" : "Add property and import data"} <Check className="size-4" /></Button>
+              <Button size="lg" className="mt-6 w-full" onClick={importProperty} disabled={!selectedSite}>{selectedProperty?.imported ? "Refresh Search Console data" : "Add property and import data"} <Check className="size-4" /></Button>
             )}
           </div>
         )}

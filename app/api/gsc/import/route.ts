@@ -3,6 +3,8 @@ import { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { ACTIVE_SITE_COOKIE, activeSiteCookieOptions } from "@/lib/active-site";
 import { missingGscConfiguration } from "@/lib/gsc-config";
+import { GscReconnectRequiredError } from "@/lib/gsc-connection";
+import { GscApiError } from "@/lib/gsc";
 import { importGscSite } from "@/lib/import-gsc";
 
 export const runtime = "nodejs";
@@ -11,8 +13,12 @@ export async function POST(request: NextRequest) {
   const { userId } = await auth();
   if (!userId) return Response.json({ message: "Authentication required." }, { status: 401 });
 
-  if (missingGscConfiguration().length) {
-    return Response.json({ mode: "mock", importedRows: 9, opportunities: 9 });
+  const missing = missingGscConfiguration();
+  if (missing.length) {
+    return Response.json({
+      message: `Live Search Console import is not configured. Missing: ${missing.join(", ")}.`,
+      missing,
+    }, { status: 503 });
   }
 
   try {
@@ -26,6 +32,11 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error("Search Console import failed:", error);
-    return Response.json({ message: error instanceof Error ? error.message : "Search Console import failed." }, { status: 500 });
+    const status = error instanceof GscReconnectRequiredError
+      ? 401
+      : error instanceof GscApiError && [400, 403, 429].includes(error.status)
+        ? error.status
+        : 500;
+    return Response.json({ message: error instanceof Error ? error.message : "Search Console import failed." }, { status });
   }
 }

@@ -9,7 +9,9 @@ export async function PATCH(request: NextRequest, context: RouteContext<"/api/op
   const { userId } = await auth();
   if (!userId) return Response.json({ message: "Authentication required." }, { status: 401 });
 
-  if (!process.env.DATABASE_URL) return Response.json({ mode: "mock", updated: true });
+  if (!process.env.DATABASE_URL) {
+    return Response.json({ message: "DATABASE_URL is not configured." }, { status: 503 });
+  }
   try {
     const { id } = await context.params;
     const body = (await request.json()) as { completed?: unknown };

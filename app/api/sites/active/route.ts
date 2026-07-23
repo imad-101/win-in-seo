@@ -9,7 +9,9 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   const { userId } = await auth();
   if (!userId) return Response.json({ message: "Authentication required." }, { status: 401 });
-  if (!process.env.DATABASE_URL) return Response.json({ mode: "mock", selected: true });
+  if (!process.env.DATABASE_URL) {
+    return Response.json({ message: "DATABASE_URL is not configured." }, { status: 503 });
+  }
 
   try {
     const body = (await request.json()) as { siteId?: unknown };

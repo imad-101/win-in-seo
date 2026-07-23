@@ -2,7 +2,6 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 import type { GscRow } from "@/lib/types";
-import { mockGscRows } from "@/lib/mock-data";
 
 const GSC_API_BASE = "https://www.googleapis.com/webmasters/v3";
 const PAGE_SIZE = 25_000;
@@ -12,6 +11,14 @@ export interface GscProperty {
   siteUrl: string;
   permissionLevel: string;
   displayName: string;
+}
+
+export interface GscDailyRow {
+  date: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
 }
 
 interface SearchAnalyticsRow {
@@ -115,6 +122,7 @@ async function queryRows(input: { accessToken: string; siteUrl: string; startDat
           startDate: input.startDate,
           endDate: input.endDate,
           dimensions: ["page", "query"],
+          dataState: "final",
           rowLimit: PAGE_SIZE,
           startRow,
         }),
@@ -127,10 +135,38 @@ async function queryRows(input: { accessToken: string; siteUrl: string; startDat
   return rows;
 }
 
-export class MockSearchConsoleProvider implements SearchConsoleProvider {
-  async importPerformance() {
-    return structuredClone(mockGscRows);
-  }
+export async function queryDailyPerformance(input: {
+  accessToken: string;
+  siteUrl: string;
+  startDate: string;
+  endDate: string;
+}): Promise<GscDailyRow[]> {
+  const data = await googleApiFetch<SearchAnalyticsResponse>(
+    `${GSC_API_BASE}/sites/${encodeURIComponent(input.siteUrl)}/searchAnalytics/query`,
+    input.accessToken,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        startDate: input.startDate,
+        endDate: input.endDate,
+        dimensions: ["date"],
+        dataState: "final",
+        rowLimit: 250,
+      }),
+    },
+  );
+
+  return (data.rows ?? []).flatMap((row) => {
+    const [date] = row.keys ?? [];
+    if (!date) return [];
+    return [{
+      date,
+      clicks: Math.round(row.clicks ?? 0),
+      impressions: Math.round(row.impressions ?? 0),
+      ctr: (row.ctr ?? 0) * 100,
+      position: row.position ?? 0,
+    }];
+  });
 }
 
 export class GoogleSearchConsoleProvider implements SearchConsoleProvider {

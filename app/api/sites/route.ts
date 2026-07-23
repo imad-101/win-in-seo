@@ -1,6 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
 import { getCurrentUser } from "@/lib/current-user";
-import { mockProperty } from "@/lib/mock-data";
 import { listWorkspaceProperties } from "@/lib/workspace-properties";
 
 export const runtime = "nodejs";
@@ -8,7 +7,9 @@ export const runtime = "nodejs";
 export async function GET() {
   const { userId } = await auth();
   if (!userId) return Response.json({ message: "Authentication required." }, { status: 401 });
-  if (!process.env.DATABASE_URL) return Response.json({ mode: "mock", properties: [mockProperty] });
+  if (!process.env.DATABASE_URL) {
+    return Response.json({ message: "DATABASE_URL is not configured." }, { status: 503 });
+  }
 
   try {
     const user = await getCurrentUser();

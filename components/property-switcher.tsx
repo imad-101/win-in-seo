@@ -124,15 +124,15 @@ export function PropertySwitcher({
         aria-haspopup="listbox"
         aria-expanded={open}
         className={cn(
-          "flex w-full items-center gap-2.5 rounded-[14px] border border-[#c9edfc] bg-[#effaff] text-left transition-colors hover:border-[#70d6ff]",
+          "flex w-full items-center gap-2.5 rounded-[14px] border border-[#dce6df] bg-white text-left shadow-sm transition-colors hover:border-[#70d6ff]",
           compact ? "h-11 max-w-[178px] px-2.5" : "p-3.5",
         )}
       >
-        <span className={cn("flex shrink-0 items-center justify-center rounded-lg bg-[#70d6ff] font-bold text-black", compact ? "size-8 text-[11px]" : "size-9 text-xs")}>
+        <span className={cn("flex shrink-0 items-center justify-center rounded-lg bg-[#dff5ff] font-bold text-[#176889]", compact ? "size-8 text-[11px]" : "size-9 text-xs")}>
           {propertyInitial(property.label)}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[13px] font-semibold text-black">{property.label}</span>
+          <span className="block truncate text-[13px] font-semibold text-[#14201c]">{property.label}</span>
           {!compact && <span className="mt-0.5 block text-[11px] text-[#727272]">{property.permission}</span>}
         </span>
         <ChevronDown className={cn("size-3.5 shrink-0 text-black transition-transform", open && "rotate-180")} />
@@ -163,9 +163,9 @@ export function PropertySwitcher({
                   aria-selected={active}
                   onClick={() => selectProperty(item.id)}
                   disabled={Boolean(switchingId) || refreshing}
-                  className={cn("flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors", active ? "bg-[#effaff]" : "hover:bg-[#f7f7f5]")}
+                  className={cn("flex w-full items-center gap-3 rounded-xl p-3 text-left transition-colors", active ? "bg-[#effaff]" : "hover:bg-[#f7f8f5]")}
                 >
-                  <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-black", active ? "bg-[#70d6ff]" : "bg-[#f2f2ef]")}>
+                  <span className={cn("flex size-9 shrink-0 items-center justify-center rounded-lg text-xs font-bold", active ? "bg-[#dff5ff] text-[#176889]" : "bg-[#f0f2ef] text-[#56615c]")}>
                     {propertyInitial(item.label)}
                   </span>
                   <span className="min-w-0 flex-1">
@@ -182,10 +182,10 @@ export function PropertySwitcher({
           {error && <p className="mx-3 mb-2 rounded-lg bg-[#fff0eb] px-3 py-2 text-[10px] font-medium text-black">{error}</p>}
 
           <div className="grid grid-cols-2 gap-2 border-t border-[#ededeb] p-3">
-            <button type="button" onClick={refreshProperty} disabled={refreshing || property.id.startsWith("mock-")} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#dededb] text-[11px] font-semibold text-black hover:border-black disabled:cursor-not-allowed disabled:opacity-45">
+            <button type="button" onClick={refreshProperty} disabled={refreshing} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-[#dededb] text-[11px] font-semibold text-black hover:border-black disabled:cursor-not-allowed disabled:opacity-45">
               {refreshing ? <LoaderCircle className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />} Refresh data
             </button>
-            <Link href="/connect" onClick={() => setOpen(false)} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-black text-[11px] font-semibold text-white hover:bg-[#242424]">
+            <Link href="/connect" onClick={() => setOpen(false)} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-[#14201c] text-[11px] font-semibold text-white hover:bg-[#20332c]">
               <Plus className="size-3.5 text-[#70d6ff]" /> Add property
             </Link>
           </div>

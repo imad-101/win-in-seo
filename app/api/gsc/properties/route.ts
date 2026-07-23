@@ -4,7 +4,6 @@ import { getCurrentUser } from "@/lib/current-user";
 import { missingGscConfiguration } from "@/lib/gsc-config";
 import { GscReconnectRequiredError, getValidGscAccessToken } from "@/lib/gsc-connection";
 import { listGscProperties } from "@/lib/gsc";
-import { mockProperty } from "@/lib/mock-data";
 import { getPrisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -16,10 +15,10 @@ export async function GET(request: NextRequest) {
   const missing = missingGscConfiguration();
   if (missing.length) {
     return Response.json({
-      mode: "mock",
+      mode: "setup",
       connected: false,
       missing,
-      properties: [{ siteUrl: mockProperty.url, displayName: mockProperty.label, permissionLevel: mockProperty.permission }],
+      properties: [],
     });
   }
 

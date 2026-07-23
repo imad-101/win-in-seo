@@ -6,14 +6,14 @@ Winin is a focused SEO task manager that turns Google Search Console performance
 
 - Clerk authentication with custom sign-in and sign-up screens
 - Separate Google Search Console property connection flow
-- Mock Search Console import for page/query data
+- Live Search Console import for page/query and daily performance data
 - Dashboard with clicks, impressions, CTR, average position, and opportunity count
 - Opportunity detection for low CTR, positions 4–20, and pages losing clicks
 - Detailed reasons, priority, impact estimate, and recommended actions
 - Completion state persisted to PostgreSQL for each authenticated user
 - Responsive desktop and mobile layouts
 
-Search Console data can run in demo mode when Google or database credentials are absent. Clerk authentication is required for every workspace page and data API. Once Google and PostgreSQL are configured, the same screens use live properties, persisted metrics, and generated opportunities.
+Clerk authentication is required for every workspace page and data API. Google and PostgreSQL configuration is mandatory for the workspace: missing configuration is shown on `/connect` and the app never substitutes demo metrics for a live import.
 
 ## Run locally
 
@@ -90,7 +90,7 @@ Winin uses Clerk sessions to protect the dashboard, setup flow, opportunity data
 
 Winin requests `webmasters.readonly`, uses OAuth state plus PKCE, binds each Google callback to the Clerk user who started it, encrypts access and refresh tokens with AES-256-GCM, and automatically refreshes expired access tokens.
 
-The importer requests page/query rows for the latest complete 28-day period and the preceding 28 days. It retrieves up to 50,000 rows per period, persists them through Prisma, and then runs the three MVP opportunity rules.
+The importer requests page/query rows for the latest complete 28-day period and the preceding 28 days. It also imports daily totals for both periods so dashboard totals, sparklines, and the comparison chart come from Search Console rather than capped page/query rows. It retrieves up to 50,000 page/query rows per period, persists them through Prisma, and then runs the three MVP opportunity rules.
 
 The property switcher lists every imported site for the signed-in user, including permission level, last sync, and open-opportunity count. Selecting a property updates a secure active-site cookie, refreshes the server-rendered workspace, and scopes all metrics and opportunities to that site. Its **Refresh data** action reruns the live Search Console import for the active property.
 

@@ -2,7 +2,7 @@ import "server-only";
 
 import { getCurrentUser } from "@/lib/current-user";
 import { getValidGscAccessToken } from "@/lib/gsc-connection";
-import { GoogleSearchConsoleProvider, listGscProperties } from "@/lib/gsc";
+import { GoogleSearchConsoleProvider, listGscProperties, queryDailyPerformance } from "@/lib/gsc";
 import { detectOpportunities } from "@/lib/opportunities";
 import { getPrisma } from "@/lib/prisma";
 
@@ -10,9 +10,19 @@ function formatDate(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
+function dateInSearchConsoleTimezone() {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return new Date(`${value.year}-${value.month}-${value.day}T00:00:00Z`);
+}
+
 export function defaultImportPeriod() {
-  const end = new Date();
-  end.setUTCHours(0, 0, 0, 0);
+  const end = dateInSearchConsoleTimezone();
   end.setUTCDate(end.getUTCDate() - 2);
   const start = new Date(end);
   start.setUTCDate(start.getUTCDate() - 27);
@@ -37,11 +47,23 @@ export async function importGscSite(input: { siteUrl: string; origin: string }) 
   if (!property) throw new Error("The selected property is not available to this Google account.");
 
   const period = defaultImportPeriod();
-  const rows = await new GoogleSearchConsoleProvider().importPerformance({
-    ...period,
-    siteUrl: input.siteUrl,
-    accessToken,
-  });
+  const previousEnd = new Date(`${period.startDate}T00:00:00Z`);
+  previousEnd.setUTCDate(previousEnd.getUTCDate() - 1);
+  const previousStart = new Date(previousEnd);
+  previousStart.setUTCDate(previousStart.getUTCDate() - 27);
+  const [rows, dailyRows] = await Promise.all([
+    new GoogleSearchConsoleProvider().importPerformance({
+      ...period,
+      siteUrl: input.siteUrl,
+      accessToken,
+    }),
+    queryDailyPerformance({
+      siteUrl: input.siteUrl,
+      accessToken,
+      startDate: formatDate(previousStart),
+      endDate: period.endDate,
+    }),
+  ]);
   const detected = detectOpportunities(rows);
   const periodStart = new Date(`${period.startDate}T00:00:00Z`);
   const periodEnd = new Date(`${period.endDate}T00:00:00Z`);
@@ -54,6 +76,8 @@ export async function importGscSite(input: { siteUrl: string; origin: string }) 
         displayName: property.displayName || displayName(input.siteUrl),
         gscPermission: property.permissionLevel,
         lastSyncedAt: new Date(),
+        importPeriodStart: periodStart,
+        importPeriodEnd: periodEnd,
       },
       create: {
         userId: user.id,
@@ -62,10 +86,13 @@ export async function importGscSite(input: { siteUrl: string; origin: string }) 
         displayName: property.displayName || displayName(input.siteUrl),
         gscPermission: property.permissionLevel,
         lastSyncedAt: new Date(),
+        importPeriodStart: periodStart,
+        importPeriodEnd: periodEnd,
       },
     });
 
     await tx.gscMetric.deleteMany({ where: { siteId: savedSite.id } });
+    await tx.gscDailyMetric.deleteMany({ where: { siteId: savedSite.id } });
 
     for (let index = 0; index < rows.length; index += 1_000) {
       await tx.gscMetric.createMany({
@@ -80,6 +107,19 @@ export async function importGscSite(input: { siteUrl: string; origin: string }) 
           position: row.position,
           periodStart,
           periodEnd,
+        })),
+      });
+    }
+
+    if (dailyRows.length) {
+      await tx.gscDailyMetric.createMany({
+        data: dailyRows.map((row) => ({
+          siteId: savedSite.id,
+          date: new Date(`${row.date}T00:00:00Z`),
+          clicks: row.clicks,
+          impressions: row.impressions,
+          ctr: row.ctr,
+          position: row.position,
         })),
       });
     }
@@ -117,6 +157,7 @@ export async function importGscSite(input: { siteUrl: string; origin: string }) 
     site,
     period,
     importedRows: rows.length,
+    importedDays: dailyRows.length,
     opportunities: detected.length,
   };
 }

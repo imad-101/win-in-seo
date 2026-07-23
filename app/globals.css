@@ -1,14 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f7f5;
-  --foreground: #171717;
+  --background: #f4f5f2;
+  --foreground: #14201c;
+  --surface: #ffffff;
+  --surface-subtle: #f7f8f5;
+  --border: #e3e7e2;
+  --muted: #69736f;
+  --accent: #249fd0;
+  --accent-soft: #dff5ff;
+  --ink: #10201a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Segoe UI", Arial, Helvetica, sans-serif;
+  --font-sans: "Segoe UI Variable", "Segoe UI", Arial, Helvetica, sans-serif;
   --font-mono: "Cascadia Code", Consolas, monospace;
   --text-xs: 0.8125rem;
   --text-xs--line-height: 1.25rem;
@@ -19,13 +26,13 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: "Segoe UI", Arial, Helvetica, sans-serif;
+  font-family: "Segoe UI Variable", "Segoe UI", Arial, Helvetica, sans-serif;
   text-rendering: optimizeLegibility;
-  letter-spacing: -0.006em;
+  letter-spacing: -0.008em;
 }
 
 * {
-  border-color: #e2e2df;
+  border-color: var(--border);
 }
 
 button,
@@ -40,8 +47,8 @@ a {
 }
 
 :where(button, a, input):focus-visible {
-  outline: 2px solid #70d6ff;
-  outline-offset: 2px;
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 
 .no-scrollbar {
@@ -53,8 +60,8 @@ a {
 }
 
 ::selection {
-  background: #70d6ff;
-  color: #111111;
+  background: #bceaff;
+  color: var(--ink);
 }
 
 ::-webkit-scrollbar {
@@ -65,6 +72,6 @@ a {
 ::-webkit-scrollbar-thumb {
   border: 3px solid transparent;
   border-radius: 999px;
-  background: #cfcfcb;
+  background: #c9cfca;
   background-clip: padding-box;
 }
