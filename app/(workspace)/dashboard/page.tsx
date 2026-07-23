@@ -17,12 +17,34 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getWorkspaceData } from "@/lib/workspace-data";
 import { formatNumber, formatPercent } from "@/lib/utils";
 
+function shortDate(value?: string) {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${value}T00:00:00Z`));
+}
+
 export default async function DashboardPage() {
   const clerkUser = await currentUser();
   const firstName = clerkUser?.firstName ?? clerkUser?.username ?? "there";
-  const { metrics: dashboardMetrics, opportunities, property, trends } = await getWorkspaceData();
-  const clickChange = ((dashboardMetrics.clicks - dashboardMetrics.previousClicks) / Math.max(1, dashboardMetrics.previousClicks)) * 100;
-  const topOpportunity = opportunities[0];
+  const { metrics: dashboardMetrics, opportunities, property, trends, weeklyProgress } = await getWorkspaceData();
+  const clickChange = dashboardMetrics.previousClicks > 0
+    ? ((dashboardMetrics.clicks - dashboardMetrics.previousClicks) / dashboardMetrics.previousClicks) * 100
+    : null;
+  const openOpportunities = opportunities.filter((opportunity) => !opportunity.completed);
+  const topOpportunity = openOpportunities[0];
+  const currentHour = new Date().getHours();
+  const greeting = currentHour < 12 ? "Good morning" : currentHour < 18 ? "Good afternoon" : "Good evening";
+  const periodLabel = trends.dates.length
+    ? `${shortDate(trends.dates[0])} – ${shortDate(trends.dates[trends.dates.length - 1])}`
+    : "No imported dates";
+  const weeklyCompleted = Math.min(weeklyProgress.completed, weeklyProgress.goal);
+  const weeklyRemaining = Math.max(0, weeklyProgress.goal - weeklyProgress.completed);
+  const weeklyRatio = weeklyCompleted / weeklyProgress.goal;
+  const weeklyCircumference = 276.5;
+  const weeklyDashOffset = weeklyCircumference * (1 - weeklyRatio);
   const today = new Intl.DateTimeFormat("en-US", {
     weekday: "long",
     month: "long",
@@ -35,7 +57,7 @@ export default async function DashboardPage() {
         <div>
           <p className="mb-2 text-[12px] font-semibold text-[#249fd0]">{today}</p>
           <h1 className="text-[30px] font-semibold leading-tight tracking-[-0.045em] text-[#14201c] sm:text-[36px]">
-            Good morning, {firstName}
+            {greeting}, {firstName}
           </h1>
           <p className="mt-2.5 max-w-xl text-[14px] leading-6 text-[#6d7872]">
             Your clearest SEO priorities and recent search performance, all in one place.
@@ -43,7 +65,7 @@ export default async function DashboardPage() {
         </div>
         <button className="flex h-10 items-center gap-2 self-start rounded-xl border border-[#dfe4df] bg-white px-3.5 text-[12px] font-semibold text-[#43504a] shadow-sm transition-colors hover:border-[#cbd4cd] sm:self-auto">
           <CalendarDays className="size-4 text-[#249fd0]" />
-          Last 28 days
+          {periodLabel}
         </button>
       </header>
 
@@ -64,7 +86,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="grid gap-3 min-[380px]:grid-cols-2 xl:grid-cols-4">
-          <MetricCard label="Total clicks" value={formatNumber(dashboardMetrics.clicks)} change={`${Math.abs(clickChange).toFixed(1)}%`} positive={clickChange >= 0} icon={MousePointerClick} trend={trends.clicks} tone={clickChange >= 0 ? "green" : "orange"} />
+          <MetricCard label="Total clicks" value={formatNumber(dashboardMetrics.clicks)} change={clickChange === null ? undefined : `${Math.abs(clickChange).toFixed(1)}%`} positive={clickChange === null || clickChange >= 0} icon={MousePointerClick} note={clickChange === null ? "No previous-period clicks" : undefined} trend={trends.clicks} tone={clickChange === null || clickChange >= 0 ? "green" : "orange"} />
           <MetricCard label="Total impressions" value={formatNumber(dashboardMetrics.impressions)} icon={Eye} note="Latest 28 days" trend={trends.impressions} />
           <MetricCard label="Average CTR" value={formatPercent(dashboardMetrics.ctr, 1)} icon={Target} note="Clicks ÷ impressions" trend={trends.ctr} tone="green" />
           <MetricCard label="Average position" value={dashboardMetrics.position.toFixed(1)} icon={BarChart3} note="Impression-weighted" trend={trends.position} />
@@ -86,9 +108,16 @@ export default async function DashboardPage() {
             </Link>
           </CardHeader>
           <CardContent className="pt-2">
-            {opportunities.slice(0, 5).map((opportunity, index) => (
+            {openOpportunities.slice(0, 5).map((opportunity, index) => (
               <TaskRow key={opportunity.id} opportunity={opportunity} rank={index + 1} />
             ))}
+            {!openOpportunities.length && (
+              <div className="flex min-h-40 flex-col items-center justify-center text-center">
+                <CheckCircle2 className="size-6 text-[#54ce71]" />
+                <p className="mt-2 text-sm font-semibold text-[#14201c]">No open opportunities</p>
+                <p className="mt-1 text-xs text-[#78827d]">Your imported data has no unfinished recommendations.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -99,7 +128,7 @@ export default async function DashboardPage() {
                 <span className="flex size-10 items-center justify-center rounded-xl bg-white/10 text-[#70d6ff] ring-1 ring-inset ring-white/10">
                   <Sparkles className="size-[18px]" />
                 </span>
-                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white/60"><span className="size-1.5 rounded-full bg-[#ff9770]" /> High priority</span>
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.08em] text-white/60"><span className="size-1.5 rounded-full bg-[#ff9770]" /> {topOpportunity.priority.toLowerCase()} priority</span>
               </div>
               <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-[#70d6ff]">Biggest quick win</p>
               <h2 className="mt-3 max-w-md text-[23px] font-semibold leading-8 tracking-[-0.035em]">{topOpportunity.title}</h2>
@@ -136,7 +165,9 @@ export default async function DashboardPage() {
               </div>
             </div>
             <div className="text-right">
-              <p className={`text-[16px] font-semibold ${clickChange >= 0 ? "text-[#2d9f48]" : "text-[#c45c39]"}`}>{clickChange >= 0 ? "+" : "−"}{Math.abs(clickChange).toFixed(1)}%</p>
+              <p className={`text-[16px] font-semibold ${clickChange === null || clickChange >= 0 ? "text-[#2d9f48]" : "text-[#c45c39]"}`}>
+                {clickChange === null ? "No prior data" : `${clickChange >= 0 ? "+" : "−"}${Math.abs(clickChange).toFixed(1)}%`}
+              </p>
               <p className="mt-0.5 text-[9px] uppercase tracking-[0.08em] text-[#929a96]">period over period</p>
             </div>
           </CardHeader>
@@ -148,24 +179,28 @@ export default async function DashboardPage() {
             <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-[#cdebd5] text-[#43b95f]"><CheckCircle2 className="size-4" strokeWidth={1.9} /></span>
             <div>
               <h2 className="text-[17px] font-semibold text-[#14201c]">Weekly progress</h2>
-              <p className="mt-1 text-[12px] text-[#7c8681]">Your focused three-task goal</p>
+              <p className="mt-1 text-[12px] text-[#7c8681]">Completed opportunities since Monday</p>
             </div>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-5">
               <div className="relative flex size-24 shrink-0 items-center justify-center">
-                <svg viewBox="0 0 100 100" className="absolute inset-0 size-full -rotate-90" role="img" aria-label="One of three weekly tasks completed">
+                <svg viewBox="0 0 100 100" className="absolute inset-0 size-full -rotate-90" role="img" aria-label={`${weeklyProgress.completed} of ${weeklyProgress.goal} weekly tasks completed`}>
                   <circle cx="50" cy="50" r="44" fill="none" stroke="#edf0ed" strokeWidth="8" />
-                  <circle cx="50" cy="50" r="44" fill="none" stroke="#80ed99" strokeWidth="8" strokeLinecap="round" strokeDasharray="276.5" strokeDashoffset="184.3" />
+                  <circle cx="50" cy="50" r="44" fill="none" stroke="#80ed99" strokeWidth="8" strokeLinecap="round" strokeDasharray={weeklyCircumference} strokeDashoffset={weeklyDashOffset} />
                 </svg>
                 <div className="relative flex size-[74px] flex-col items-center justify-center rounded-full bg-white shadow-[inset_0_0_0_1px_#edf0ed]">
-                  <span className="text-xl font-semibold text-[#14201c]">1/3</span>
+                  <span className="text-xl font-semibold text-[#14201c]">{weeklyCompleted}/{weeklyProgress.goal}</span>
                   <span className="text-[9px] text-[#8a938f]">complete</span>
                 </div>
               </div>
               <div>
-                <p className="text-sm font-semibold text-[#14201c]">A strong start</p>
-                <p className="mt-1 text-xs leading-5 text-[#78827d]">Complete 2 more high-impact tasks this week.</p>
+                <p className="text-sm font-semibold text-[#14201c]">{weeklyRemaining ? weeklyProgress.completed ? "A strong start" : "Ready when you are" : "Weekly goal reached"}</p>
+                <p className="mt-1 text-xs leading-5 text-[#78827d]">
+                  {weeklyRemaining
+                    ? `Complete ${weeklyRemaining} more high-impact ${weeklyRemaining === 1 ? "task" : "tasks"} this week.`
+                    : `${weeklyProgress.completed} ${weeklyProgress.completed === 1 ? "task" : "tasks"} completed this week.`}
+                </p>
               </div>
             </div>
           </CardContent>

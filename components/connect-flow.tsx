@@ -118,7 +118,7 @@ export function ConnectFlow({ initialError }: { initialError?: string }) {
                 {data.missing?.map((item) => <li key={item}>{item}</li>)}
               </ul>
             </div>
-            <p className="mt-4 text-xs leading-5 text-[#777777]">The app will not substitute demo metrics for a live import. Once setup is complete, this page will show the Google authorization button.</p>
+            <p className="mt-4 text-xs leading-5 text-[#777777]">The dashboard stays unavailable until live import setup is complete. Once configured, this page will show the Google authorization button.</p>
           </div>
         ) : needsGoogleConnection ? (
           <div>

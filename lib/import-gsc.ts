@@ -144,12 +144,23 @@ export async function importGscSite(input: { siteUrl: string; origin: string }) 
         create: { siteId: savedSite.id, sourceKey: item.id, ...opportunityData },
       });
     }
-    await tx.opportunity.deleteMany({
-      where: {
-        siteId: savedSite.id,
-        ...(detected.length ? { sourceKey: { notIn: detected.map((item) => item.id) } } : {}),
-      },
+    const currentSourceKeys = new Set(detected.map((item) => item.id));
+    const persistedOpportunities = await tx.opportunity.findMany({
+      where: { siteId: savedSite.id },
+      select: { sourceKey: true },
     });
+    const staleSourceKeys = persistedOpportunities
+      .map((item) => item.sourceKey)
+      .filter((sourceKey) => !currentSourceKeys.has(sourceKey));
+
+    for (let index = 0; index < staleSourceKeys.length; index += 500) {
+      await tx.opportunity.deleteMany({
+        where: {
+          siteId: savedSite.id,
+          sourceKey: { in: staleSourceKeys.slice(index, index + 500) },
+        },
+      });
+    }
     return savedSite;
   }, { timeout: 120_000 });
 

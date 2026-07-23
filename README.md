@@ -13,7 +13,7 @@ Winin is a focused SEO task manager that turns Google Search Console performance
 - Completion state persisted to PostgreSQL for each authenticated user
 - Responsive desktop and mobile layouts
 
-Clerk authentication is required for every workspace page and data API. Google and PostgreSQL configuration is mandatory for the workspace: missing configuration is shown on `/connect` and the app never substitutes demo metrics for a live import.
+Clerk authentication is required for every workspace page and data API. Google and database configuration is mandatory for the workspace: missing configuration is shown on `/connect`, and workspace metrics require a completed live import.
 
 ## Run locally
 
@@ -24,17 +24,18 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-## Database
+## Local database
 
-The PostgreSQL data model is in `prisma/schema.prisma` and covers users, Google accounts, connected sites, imported GSC metrics, and generated opportunities.
+Local development uses the file-backed SQLite database at `prisma/dev.db`. The data model covers users, Google accounts, connected sites, imported GSC metrics, and generated opportunities.
 
 ```bash
 copy .env.example .env
 npm run db:validate
 npm run db:generate
+npm run db:migrate
 ```
 
-Set `DATABASE_URL` to a PostgreSQL connection string before generating or migrating the database.
+The PostgreSQL version of the schema and its migration are preserved under `prisma/schema.postgresql.prisma` and `prisma/migrations-postgresql` for a later hosted-database migration.
 
 ## Authentication with Clerk
 
@@ -70,7 +71,7 @@ Winin uses Clerk sessions to protect the dashboard, setup flow, opportunity data
 6. Copy `.env.example` to `.env` and set:
 
    ```env
-   DATABASE_URL="postgresql://..."
+   DATABASE_URL="file:./prisma/dev.db"
    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="pk_test_..."
    CLERK_SECRET_KEY="sk_test_..."
    GOOGLE_CLIENT_ID="...apps.googleusercontent.com"

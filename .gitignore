@@ -21,6 +21,12 @@
 /build
 /generated/prisma
 
+# local SQLite development database
+/prisma/dev.db
+/prisma/dev.db-journal
+/prisma/dev.db-shm
+/prisma/dev.db-wal
+
 # misc
 .DS_Store
 *.pem

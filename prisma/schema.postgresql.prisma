@@ -4,7 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 enum OpportunityType {
@@ -42,8 +42,8 @@ model Account {
   userId            String
   provider          String
   providerAccountId String
-  accessToken       String?
-  refreshToken      String?
+  accessToken       String? @db.Text
+  refreshToken      String? @db.Text
   expiresAt         Int?
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -55,10 +55,10 @@ model GscConnection {
   userId          String   @unique
   googleAccountId String
   email           String
-  accessToken     String
-  refreshToken    String?
+  accessToken     String   @db.Text
+  refreshToken    String?  @db.Text
   expiresAt       DateTime
-  scopes          String
+  scopes          String   @db.Text
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   sites           Site[]
   createdAt       DateTime @default(now())
@@ -92,7 +92,7 @@ model Site {
 model GscDailyMetric {
   id          String   @id @default(cuid())
   siteId      String
-  date        DateTime
+  date        DateTime @db.Date
   clicks      Int
   impressions Int
   ctr         Float
@@ -137,7 +137,7 @@ model Opportunity {
   impressions    Int
   ctr            Float
   position       Float
-  reason         String
+  reason         String            @db.Text
   actions        Json
   completedAt    DateTime?
   site           Site              @relation(fields: [siteId], references: [id], onDelete: Cascade)

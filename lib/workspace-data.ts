@@ -121,6 +121,14 @@ export const getWorkspaceData = cache(async () => {
     const priorityDifference = priorityWeight[right.priority] - priorityWeight[left.priority];
     return priorityDifference || right.impressions - left.impressions;
   });
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setHours(0, 0, 0, 0);
+  const daysSinceMonday = (weekStart.getDay() + 6) % 7;
+  weekStart.setDate(weekStart.getDate() - daysSinceMonday);
+  const completedThisWeek = site.opportunities.filter(
+    (item) => item.status === "COMPLETED" && item.completedAt && item.completedAt >= weekStart,
+  ).length;
 
   return {
     source: "gsc" as const,
@@ -136,6 +144,10 @@ export const getWorkspaceData = cache(async () => {
       ctr: currentDaily.map((row) => row.ctr),
       position: currentDaily.map((row) => row.position),
       dates: currentDaily.map((row) => dateKey(row.date)),
+    },
+    weeklyProgress: {
+      completed: completedThisWeek,
+      goal: 3,
     },
     opportunities,
     property: {
